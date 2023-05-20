@@ -104,7 +104,7 @@ class FileProcessor:
         return orientation_list, x_local_list, y_local_list, z_local_list, x_angle_list, y_angle_list, z_angle_list
 
     def write_new_orientation(self, input_inp) -> ".inp":
-        a=1
+        a=2
 
 debug = FileProcessor()
 debug.read_file("Shell_3_sections_flipped.inp")
