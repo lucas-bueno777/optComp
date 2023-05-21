@@ -1,8 +1,12 @@
 """
 v.1.0.0 - Basic release
-*.inp file manager for *ORIENTATION, *NSET and *ELSET parameters extraction and riting
+Comprises all data management for reading, modifying and writing *inp files,
+process *.dat files output requests and run CalculiX by CMD.
 """
 
+import subprocess
+import re
+import os
 import numpy as np
 
 
@@ -130,13 +134,16 @@ class FileProcessor:
         """
         Rewrites input file to change orientation decks and includes output request, requires the
         optimization type (Stress, Strain or Displacement) and the set used for evaluating the 
-        results. 
+        results. Each *args is an angle to be input in the orientation deck
         """
+
+        # Empty the modification lines
+        self.modified_lines = []
 
         # Checks if input angles are the same number of orientations
         if len(args) != len(self.orientation_line):
             raise ValueError(
-                "The input angles are not the same number of orientations")
+                "The input angles (" + str(len(args)) + ") are not the same number of orientations: " + str(len(self.orientation_line)))
 
         # Appends all data before the first *ORIENTATION deck
         for i in range(self.orientation_line[0]):
@@ -191,6 +198,16 @@ class FileProcessor:
         Retrieve the results from a dat file according to the optimization type storing them
         locally in the class.
         """
+        # Empty the lists of results
+        self.sxx_values = []
+        self.syy_values = []
+        self.sxy_values = []
+        self.exx_values = []
+        self.eyy_values = []
+        self.exy_values = []
+        self.uxx_values = []
+        self.uyy_values = []
+        self.uzz_values = []
 
         if optimization_type == "Stress":
             with open(self.output_file + ".dat", 'r') as file:
@@ -370,33 +387,26 @@ class FileProcessor:
                 uxx_value = self.uxx_values[i]
                 uyy_value = self.uyy_values[i]
                 uzz_value = self.uzz_values[i]
-                resultant = (uxx_value ** 2 + uyy_value ** 2 + uzz_value ** 2) ** 0.5
+                resultant = (uxx_value ** 2 + uyy_value **
+                             2 + uzz_value ** 2) ** 0.5
 
                 u_magnitude.append(resultant)
-            
+
             if optimization_criteria == "Max":
                 return max(u_magnitude)
             if optimization_criteria == "Average":
                 return sum(u_magnitude) / len(u_magnitude)
 
-debug = FileProcessor()
-debug.read_file("Shell_3_sections_flipped.inp")
-debug.search_orientation()
-# debug.write_input_file("Stress", "design_elements",
-#                        50.213412312, 65.12341234523, 75.128739821763)
-# debug.retrieve_results("Stress")
-# a = debug.process_results(
-    # "Stress", "Max", "Max stress", 1500, 1200, 50, 250, 70)
-# print(a)
-# debug.write_input_file("Strain", "design_elements",
-#                        50.213412312, 65.12341234523, 75.128739821763)
-# debug.retrieve_results("Strain")
-# a = debug.process_results(
-#     "Strain", "Max", 0.01050, 0.00850, 0.00500, 0.02500, 0.01400)
-# print(a)
-debug.write_input_file("Displacement", "design_elements",
-                       50.213412312, 65.12341234523, 75.128739821763)
-debug.retrieve_results("Displacement")
-a = debug.process_results(
-    "Displacement", "Average")
-print(a)
+    def run_calculix(self, work_directory: str, ccx_name: str, file_name: str) -> float:
+        """
+        Runs calculix by CMD using its name, the work directory of the file and its name
+        and returns the time spent in calculation
+        """
+
+        os.chdir(work_directory)
+        output = subprocess.check_output(
+            ["start", "/B", "/WAIT", "cmd", "/C", "{} {}".format(ccx_name, file_name)], shell=True, encoding="utf-8")
+        time_pattern = r"Total CalculiX Time: (\d+\.\d+)"
+        match = re.search(time_pattern, output)
+        time_spent = float(match.group(1))
+        return time_spent
