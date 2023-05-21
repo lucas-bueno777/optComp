@@ -9,3 +9,4 @@ Current limitations:
 - The input file must not include any *NODE PRINT or *EL PRINT cards
 - Only 1 step is supported
 - The nodes/elements sets must be defined previously
+- The CalculiX executable must be placed within optComp folder or be acessible via PATH.
