@@ -30,3 +30,6 @@ At the moment, the backend is being developed and tests are being conducted, the
 - Fiber angles as discrete variables (0°, 15°, 30° ... 90°)
 - Thickness of core as optimization variable (for sandwich structures)
 - Interative selector to make it easier to set the optimization parameters
+
+## Acknowledgments
+- Special thanks to [Mr. Roland Smith](https://github.com/rsmith-nl) due to very useful advices for the software development.
