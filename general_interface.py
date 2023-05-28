@@ -1,4 +1,5 @@
 """
+OBSOLETE
 v.1.0.0 - Basic release
 GUI interface for the composite optimizer. Contains input, optimization and status tabs.
 """
