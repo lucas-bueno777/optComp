@@ -4,6 +4,9 @@ The software **optComp** is an open-source optimization module for composite str
 ## Current state:
 At the moment, the backend is being developed and tests are being conducted, therefore no user available version is available yet. However, if you are interested in running the software now, please contact me and I can provide you test files and better descriptions on how to use the tool. The frontend will be fully developed after enough completion of the backend.
 
+General information is shown in below figure.
+![code_structure](code_structure.png)
+
 ## Current limitations:
 - Only CalculiX input files are supported
 - Only orientations can be optimized
