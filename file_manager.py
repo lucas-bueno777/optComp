@@ -11,12 +11,17 @@ import numpy as np
 
 
 class FileProcessor:
-    """Processes the input file reading and writing data"""
+    """Processes the FEM files reading and writing"""
 
-    def __init__(self) -> None:
-        """Initialization of local class variables"""
+    def __init__(self, output_file) -> None:
+        """
+        Initialization of local class variables
+
+        Args:
+            output_file (str): name of the output file to be created
+        """
         self.read_lines = None
-        self.output_file = "MOD_file"
+        self.output_file = output_file
         self.orientation_line = []
         self.modified_lines = []
         self.sxx_values = []
@@ -30,9 +35,14 @@ class FileProcessor:
         self.uzz_values = []
 
     def read_file(self, file_path: str) -> None:
-        """Opens the specified file and stores its data in a string"""
+        """
+        Opens the specified file and stores its data in a string
+        
+        Args:
+            file_path (str): path of the specified input file
+        """
         try:
-            with open(file_path, 'r') as file:
+            with open(file_path, 'r', encoding="utf-8") as file:
                 self.read_lines = file.readlines()
 
         except FileNotFoundError:
@@ -40,8 +50,14 @@ class FileProcessor:
 
     def search_sets(self, set_type: str) -> list:
         """
-        Searches for sets inside the file and stores its name and number of elements, requires the
-        set type (ELSET or NSET) and outputs the sets names and amount of nodes/elements
+        Searches for sets inside the file and stores its name and number of elements
+
+        Args:
+            set_type (str): "ELSET" for element based or "NSET" for node based
+             
+        Returns:
+            sets (list): sets names
+            data_values (list): amount of nodes/elements in each set
         """
         sets = []
         data_values = []
@@ -81,8 +97,16 @@ class FileProcessor:
 
     def search_orientation(self) -> list:
         """
-        Searches for orientation cards inside the input file and outputs the list of orientations,
-        local axis and angles between local axis and the global ones.
+        Searches for orientation cards inside the input file and outputs useful information.
+
+        Returns:
+            orientation_list (list):
+            x_local_list (list): (i, j k) vector for each x local axis
+            y_local_list (list): (i, j k) vector for each y local axis
+            z_local_list (list): (i, j k) vector for each z local axis
+            x_angle_list (list): angle between each x local axis and x global axis
+            y_angle_list (list): angle between each y local axis and y global axis
+            z_angle_list (list): angle between each z local axis and z global axis
         """
         orientation_list = []
         x_local_list = []
@@ -128,13 +152,17 @@ class FileProcessor:
                 z_angle_list.append(angle_z)
                 self.orientation_line.append(i)
 
-        return orientation_list, x_local_list, y_local_list, z_local_list, x_angle_list, y_angle_list, z_angle_list
+        return (orientation_list, x_local_list, y_local_list, z_local_list,
+                x_angle_list, y_angle_list, z_angle_list)
 
     def write_input_file(self, optimization_type: str, optimization_set: str, *args: float) -> None:
         """
-        Rewrites input file to change orientation decks and includes output request, requires the
-        optimization type (Stress, Strain or Displacement) and the set used for evaluating the 
-        results. Each *args is an angle to be input in the orientation deck
+        Rewrites input file to change orientation decks and includes output request.
+
+        Args:
+            optimization_type (str): can be "Stress", "Strain" or "Displacement"
+            optimization_set (str): name of the evaluated set
+            *args (float): angles of rotation for each *ORIENTATION card
         """
 
         # Empty the modification lines
@@ -142,8 +170,10 @@ class FileProcessor:
 
         # Checks if input angles are the same number of orientations
         if len(args) != len(self.orientation_line):
+            num_angles = str(len(args))
+            num_orientations = str(len(self.orientation_line))
             raise ValueError(
-                "The input angles (" + str(len(args)) + ") are not the same number of orientations: " + str(len(self.orientation_line)))
+                f"Input angles ({num_angles}) differ from orientations ({num_orientations})")
 
         # Appends all data before the first *ORIENTATION deck
         for i in range(self.orientation_line[0]):
@@ -183,7 +213,7 @@ class FileProcessor:
                 compatibility_prepomax = False
 
         # Writes the output request just above the end of the step
-        with open(self.output_file + ".inp", 'w') as file:
+        with open(self.output_file + ".inp", 'w', encoding="utf-8") as file:
             if compatibility_prepomax:
                 file.writelines(self.modified_lines[:end_step_line - 1])
                 file.writelines(output_request)
@@ -195,8 +225,10 @@ class FileProcessor:
 
     def retrieve_results(self, optimization_type: str) -> None:
         """
-        Retrieve the results from a dat file according to the optimization type storing them
-        locally in the class.
+        Retrieve the results from a dat file and stores them locally in the class.
+
+        Args:
+            optimization_type (str): can be "Stress", "Strain" or "Displacement"
         """
         # Empty the lists of results
         self.sxx_values = []
@@ -210,7 +242,7 @@ class FileProcessor:
         self.uzz_values = []
 
         if optimization_type == "Stress":
-            with open(self.output_file + ".dat", 'r') as file:
+            with open(self.output_file + ".dat", 'r', encoding="utf-8") as file:
 
                 # Header skip
                 for _ in range(3):
@@ -223,7 +255,7 @@ class FileProcessor:
                     self.sxy_values.append(float(elements[5]))
 
         elif optimization_type == "Strain":
-            with open(self.output_file + ".dat", 'r') as file:
+            with open(self.output_file + ".dat", 'r', encoding="utf-8") as file:
 
                 # Header skip
                 for _ in range(3):
@@ -236,7 +268,7 @@ class FileProcessor:
                     self.exy_values.append(float(elements[5]))
 
         elif optimization_type == "Displacement":
-            with open(self.output_file + ".dat", 'r') as file:
+            with open(self.output_file + ".dat", 'r', encoding="utf-8") as file:
 
                 # Header skip
                 for _ in range(3):
@@ -251,17 +283,26 @@ class FileProcessor:
     def process_results(
             self, optimization_type: str, optimization_criteria: str, *args: float) -> float:
         """
-        Processes the results according to the optimization type: if stress-based, uses Tsai-Hill
-        failure criteria (*args = X11 traction, X11 compression, X22 traction, X22 compression,
-        and X12). Additionaly, the stress computation can be switched to max-stress by the sixth 
-        *arg ("Tsai-Hill" or "Max stress") If strain based, calculates each ratio (*args = e*11 
-        traction, e*11 compression, e*22 traction, e*22 compression and e*12). If displacement 
-        based, no *args needed as the output will be the resultant.
+        Processes the results of the *.dat file.
+
+        Args:
+            optimization_type (str): can be "Stress", "Strain" or "Displacement"
+            optimization_criteria (str): can be "Max" or "Average"
+            *args (None): If "Stress", the first arg (str) need to be "Tsai-Hill" or "Max stress"
+                and the next ones (float) are the allowables X11T, X11C, X22T, X22C, X12. If
+                "Strain", the args (float) are the allowables E11T, E11C, E22T, E22C, E12. If
+                "Displacement", no arg is needed.
+
+        Returns:
+            max_value (float): most structural critical value according to optimization type and
+                criteria, such as higher Tsai-Hill index, average displacement, etc.    
         """
         if optimization_type == "Stress":
 
-            x11t, x11c, x22t, x22c, x12 = args[1:6]
-            calculation_methodology = args[0]
+            if len(args) == 6:
+                calculation_methodology, x11t, x11c, x22t, x22c, x12 = args
+            else:
+                raise ValueError("Stress calculation requires 6 args")
 
             if calculation_methodology == "Tsai-Hill":
                 tsai_hill_output = []
@@ -336,7 +377,11 @@ class FileProcessor:
                     return max(average_sxx, average_syy, average_sxy)
 
         if optimization_type == "Strain":
-            e11t, e11c, e22t, e22c, e12 = args
+
+            if len(args) == 5:
+                e11t, e11c, e22t, e22c, e12 = args
+            else:
+                raise ValueError("Strain calculation requires 5 args")
 
             exx_ratios = []
             eyy_ratios = []
@@ -399,13 +444,23 @@ class FileProcessor:
 
     def run_calculix(self, work_directory: str, ccx_name: str, file_name: str) -> float:
         """
-        Runs calculix by CMD using its name, the work directory of the file and its name
-        and returns the time spent in calculation
+        Runs calculix by CMD shell.
+        
+        Args:
+            work_directory (str): the work directory of the file
+            ccx_name (str): name of CalculiX executable without *.exe
+            file_name (str): name of the input file with *.inp
+
+        Returns:
+            time_spent (float): time spent in CalculiX run (seconds)
         """
 
         os.chdir(work_directory)
         output = subprocess.check_output(
-            ["start", "/B", "/WAIT", "cmd", "/C", "{} {}".format(ccx_name, file_name)], shell=True, encoding="utf-8")
+            ["start", "/B", "/WAIT", "cmd", "/C", f"{ccx_name} {file_name}"],
+            shell=True,
+            encoding="utf-8"
+        )
         time_pattern = r"Total CalculiX Time: (\d+\.\d+)"
         match = re.search(time_pattern, output)
         time_spent = float(match.group(1))
