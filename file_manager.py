@@ -13,15 +13,12 @@ import numpy as np
 class FileProcessor:
     """Processes the FEM files reading and writing"""
 
-    def __init__(self, output_file) -> None:
+    def __init__(self) -> None:
         """
         Initialization of local class variables
-
-        Args:
-            output_file (str): name of the output file to be created
         """
         self.read_lines = None
-        self.output_file = output_file
+        self.output_file = "MOD_file"
         self.orientation_line = []
         self.modified_lines = []
         self.sxx_values = []
@@ -33,6 +30,21 @@ class FileProcessor:
         self.uxx_values = []
         self.uyy_values = []
         self.uzz_values = []
+
+        self.orientations_list = []
+        self.orientations_index = []
+        self.materials_list = []
+        self.steps_list = []
+        self.nsets_list = []
+        self.elsets_list = []
+        self.solid_section_list = []
+        self.solid_section_index = []
+        self.shell_list = []
+        self.composite_list = []
+        self.composite_layers = []
+        self.composite_index = []
+        self.shell_list = []
+        self.shell_index = []
 
     def read_file(self, file_path: str) -> None:
         """
@@ -465,3 +477,67 @@ class FileProcessor:
         match = re.search(time_pattern, output)
         time_spent = float(match.group(1))
         return time_spent
+
+    def search_information(self) -> None:
+        """
+        Searches for relevant information in *.inp file and stores them inside the class
+        environment. Cards that the purpose is only to show to the user get the first line saved,
+        such as materials, steps, node sets and element sets. To those which may be edited, the
+        index of the line is also saved such as orientations, shell sections, composites and solid
+        sections.
+        """
+        for index, line in enumerate(self.read_lines):
+
+            if "*ORIENTATION" in line.upper():
+                self.orientations_index.append(index)
+                self.orientations_list.append(line.strip())
+
+                # Checks if the third line has input data
+                if self.read_lines[index + 2][0].isdigit():
+                    raise ValueError(f"Not allowed: orientation {line} has 2 lines of input")
+
+            elif "*MATERIAL" in line.upper():
+                self.materials_list.append(line.strip())
+
+            elif "*STEP" in line.upper():
+                self.steps_list.append(self.read_lines[index + 1].strip())
+
+            elif "*NSET" in line.upper():
+                self.nsets_list.append(line.strip())
+
+            elif "*ELSET" in line.upper():
+                self.elsets_list.append(line.strip())
+
+            elif "*SOLID SECTION" in line.upper():
+                self.solid_section_list.append(line.strip())
+                self.solid_section_index.append(index)
+
+            elif "*SHELL SECTION" in line.upper():
+
+                if "COMPOSITE" in line.upper():
+                    self.composite_list.append(line.strip())
+                    self.composite_index.append(index)
+
+                else:
+                    self.shell_list.append(line.strip())
+                    self.shell_index.append(index)
+
+    def count_composite_layers(self, index_list: list) -> None:
+        """
+        Counts the number of layers in each composite card and store the result inside the class.
+        
+        Args:
+            index_list (list): list with the indexes of each composite card in the input file.
+        """
+
+        for index in index_list:
+            num_layers = 0
+            for i in range(1,999):
+                starts_with_number = self.read_lines[index + i][0].isdigit()
+
+                if starts_with_number:
+                    num_layers += 1
+                else:
+                    break
+
+            self.composite_layers.append(num_layers)
