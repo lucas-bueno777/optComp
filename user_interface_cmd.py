@@ -8,20 +8,32 @@ class UserInterfaceCMD:
     """Main user interaction module"""
 
     def __init__(self) -> None:
+        """Initialization of local variables and FileProcessor instance"""
         self.optcomp_version = "v.1.0.0"
-        self.FileProcessor = FileProcessor()
+        self.file_processor = FileProcessor()
         self.materials_choosen = []
+        self.input_handler = {
+            "0": None,
+            "1": self.material_input_processing
+        }
 
     def process_file(self, file_path: str) -> None:
-        self.FileProcessor.read_file(file_path)
-        self.FileProcessor.search_information()
+        """
+        Calls the methods from FileProcessor to read file and search information
+        
+        Args:
+            file_path (str): path of the *.inp file
+        """
+        self.file_processor.read_file(file_path)
+        self.file_processor.search_information()
 
     def material_input_processing(self) -> None:
+        """User interaction to define material selection"""
         while True:
             print("\n********** MATERIAL DEFINITION **********")
             print("The materials are:")
 
-            for index, material in enumerate(self.FileProcessor.materials_list):
+            for index, material in enumerate(self.file_processor.materials_list):
                 print(f"{index} - {material}")
 
             print("NEXT - All materials set")
@@ -33,7 +45,7 @@ class UserInterfaceCMD:
                 print(f"\nSelected materials = {self.materials_choosen}")
                 break
 
-            elif material_input.upper() == "CLEAR":
+            if material_input.upper() == "CLEAR":
                 self.materials_choosen = []
                 print("\nList of materials has been cleared")
 
@@ -43,10 +55,11 @@ class UserInterfaceCMD:
             elif int(material_input) in self.materials_choosen:
                 print("\nMaterial already selected, please choose another one")
 
-            elif int(material_input) in range(len(self.FileProcessor.materials_list)):
+            elif int(material_input) in range(len(self.file_processor.materials_list)):
                 self.materials_choosen.append(int(material_input))
 
-    def main(self) -> None:
+    def dialog_file_input(self) -> None:
+        """Initialization of user interaction to read the file path"""
         print(f"Welcome to optComp {self.optcomp_version}")
 
         # Input file processing
@@ -59,6 +72,8 @@ class UserInterfaceCMD:
             else:
                 break
 
+    def dialog_analysis_parameters(self) -> None:
+        """Dialog of GUI to adjust analysis parameters"""
         while True:
             print("\nSelect one option to adjust the analysis parameters:")
             print("1 - Materials")
@@ -71,16 +86,22 @@ class UserInterfaceCMD:
             print("8 - Solid sections")
             print("9 - Optimizer parameters")
             print("NEXT - All parameters set, optimization can start")
-            user_option = input("Enter your option: ")
+            user_option = input("\nEnter your option: ")
 
-            # Checks if the user inputs only numbers
+            # Handles the user input and warns if invalid entries are given.
             if user_option.isdigit() is False:
                 print("\nWARNING: Please insert only a number\n")
 
-            if user_option == "1":
-                self.material_input_processing()
+            if user_option in self.input_handler:
+                self.input_handler[user_option]()
 
+            else:
+                print("Invalid input. Try again")
 
+    def main(self) -> None:
+        """Main method for execution"""
+        self.dialog_file_input()
+        self.dialog_analysis_parameters()
 
 
 if __name__ == "__main__":
