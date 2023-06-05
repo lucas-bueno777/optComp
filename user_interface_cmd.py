@@ -12,20 +12,20 @@ class UserInterfaceCMD:
         self.optcomp_version = "v.1.0.0"
         self.file_processor = FileProcessor()
         self.materials_choosen = []
+        self.nset_choosen = ''
+        self.elset_choosen = ''
         self.input_handler = {
             "0": None,
-            "1": self.material_input_processing
+            "1": self.material_input_processing,
+            "2": self.step_input_processing,
+            "3": self.node_sets_processing,
+            "4": self.element_sets_processing,
+            "5": self.orientation_processing,
+            "6": self.shell_processing,
+            "7": self.composite_processing,
+            "8": self.solid_processing,
+            "9": self.opt_processing
         }
-
-    def process_file(self, file_path: str) -> None:
-        """
-        Calls the methods from FileProcessor to read file and search information
-        
-        Args:
-            file_path (str): path of the *.inp file
-        """
-        self.file_processor.read_file(file_path)
-        self.file_processor.search_information()
 
     def material_input_processing(self) -> None:
         """User interaction to define material selection"""
@@ -58,6 +58,104 @@ class UserInterfaceCMD:
             elif int(material_input) in range(len(self.file_processor.materials_list)):
                 self.materials_choosen.append(int(material_input))
 
+    def step_input_processing(self) -> None:
+        """User interaction to define step selection"""
+        while True:
+            print("\n********** STEP DEFINITION **********")
+            print("The steps are:")
+
+            for index, steps in enumerate(self.file_processor.steps_list):
+                print(f"{index} - {steps}")
+
+            print("At the moment, changes in steps are unavailable. Please use NEXT to return.")
+            print("NEXT - All steps set")
+            print("CLEAR - clear current selection")
+            steps_input = input(
+                "Please select which steps will be included in the optimization: ")
+            
+            if steps_input.upper() == "NEXT":
+                break
+
+            else:
+                print("Invalid input.")
+
+    def node_sets_processing(self) -> None:
+        """User interaction to define node set selection"""
+        while True:
+            print("\n********** NODE SETS DEFINITION **********")
+            print("The available node sets are:")
+
+            for index, nset in enumerate(self.file_processor.nsets_list):
+                print(f"{index} - {nset}")
+
+            print("NEXT - Node set selected")
+            print("CLEAR - clear current selection")
+            nset_input = input(
+                "Please select which node set will be included in the optimization: ")
+
+            if nset_input.upper() == "NEXT":
+                print(f"\nSelected node set = {self.nset_choosen}")
+                break
+
+            if nset_input.upper() == "CLEAR":
+                self.nset_choosen = ''
+                print("\nNode set selection has been cleared")
+
+            elif nset_input.isdigit() is False:
+                print("\nPlease insert only one number")
+
+            elif int(nset_input) in range(len(self.file_processor.nsets_list)):
+                self.nset_choosen = nset_input
+
+            else:
+                print("\nInvalid selection.")
+
+    def element_sets_processing(self) -> None:
+        """User interaction to define element set selection"""
+        while True:
+            print("\n********** ELEMENT SETS DEFINITION **********")
+            print("The available element sets are:")
+
+            for index, elset in enumerate(self.file_processor.elsets_list):
+                print(f"{index} - {elset}")
+
+            print("NEXT - element set selected")
+            print("CLEAR - clear current selection")
+            elset_input = input(
+                "Please select which element set will be included in the optimization: ")
+
+            if elset_input.upper() == "NEXT":
+                print(f"\nSelected element set = {self.elset_choosen}")
+                break
+
+            if elset_input.upper() == "CLEAR":
+                self.elset_choosen = ''
+                print("\nElement set selection has been cleared")
+
+            elif elset_input.isdigit() is False:
+                print("\nPlease insert only one number")
+
+            elif int(elset_input) in range(len(self.file_processor.elsets_list)):
+                self.elset_choosen = elset_input
+
+            else:
+                print("\nInvalid selection.")
+
+    def orientation_processing(self) -> None:
+        pass
+
+    def shell_processing(self) -> None:
+        pass
+
+    def composite_processing(self) -> None:
+        pass
+
+    def solid_processing(self) -> None:
+        pass
+
+    def opt_processing(self) -> None:
+        pass
+
     def dialog_file_input(self) -> None:
         """Initialization of user interaction to read the file path"""
         print(f"Welcome to optComp {self.optcomp_version}")
@@ -66,9 +164,10 @@ class UserInterfaceCMD:
         while True:
             file_path = input("Please paste the path to your CalculiX input file (*.inp): ")
             try:
-                self.process_file(file_path)
+                self.file_processor.read_file(file_path)
+                self.file_processor.search_information()
             except TypeError:
-                print("The file could not be loaded. Check its path, spelling and presence of .inp")
+                print("The file couldn't be loaded. Check its path, spelling and presence of *.inp")
             else:
                 break
 
@@ -100,6 +199,7 @@ class UserInterfaceCMD:
 
     def main(self) -> None:
         """Main method for execution"""
+
         self.dialog_file_input()
         self.dialog_analysis_parameters()
 
