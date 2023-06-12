@@ -14,6 +14,8 @@ class UserInterfaceCMD:
         self.materials_choosen = []
         self.nset_choosen = ''
         self.elset_choosen = ''
+        self.orient_choosen = []
+        self.orient_type = []
         self.input_handler = {
             "0": None,
             "1": self.material_input_processing,
@@ -38,8 +40,9 @@ class UserInterfaceCMD:
 
             print("NEXT - All materials set")
             print("CLEAR - clear current selection")
+            print("ALL - Select all materials at once")
             material_input = input(
-                "Please select which materials will be included in the optimization: ")
+                "\nPlease select which materials will be included in the optimization: ")
 
             if material_input.upper() == "NEXT":
                 print(f"\nSelected materials = {self.materials_choosen}")
@@ -49,6 +52,12 @@ class UserInterfaceCMD:
                 self.materials_choosen = []
                 print("\nList of materials has been cleared")
 
+            elif material_input.upper() == "ALL":
+                for i in range(len(self.file_processor.materials_list)):
+                    self.materials_choosen.append(i)
+                print(f"\nSelected materials = {self.materials_choosen}")
+                break
+
             elif material_input.isdigit() is False:
                 print("\nPlease insert only numbers, one at a time")
 
@@ -57,6 +66,9 @@ class UserInterfaceCMD:
 
             elif int(material_input) in range(len(self.file_processor.materials_list)):
                 self.materials_choosen.append(int(material_input))
+
+            else:
+                print("Invalid selection.")
 
     def step_input_processing(self) -> None:
         """User interaction to define step selection"""
@@ -71,8 +83,8 @@ class UserInterfaceCMD:
             print("NEXT - All steps set")
             print("CLEAR - clear current selection")
             steps_input = input(
-                "Please select which steps will be included in the optimization: ")
-            
+                "\nPlease select which steps will be included in the optimization: ")
+
             if steps_input.upper() == "NEXT":
                 break
 
@@ -91,7 +103,7 @@ class UserInterfaceCMD:
             print("NEXT - Node set selected")
             print("CLEAR - clear current selection")
             nset_input = input(
-                "Please select which node set will be included in the optimization: ")
+                "\nPlease select which node set will be included in the optimization: ")
 
             if nset_input.upper() == "NEXT":
                 print(f"\nSelected node set = {self.nset_choosen}")
@@ -106,6 +118,8 @@ class UserInterfaceCMD:
 
             elif int(nset_input) in range(len(self.file_processor.nsets_list)):
                 self.nset_choosen = nset_input
+                print(f"\nSelected node set = {self.nset_choosen}")
+                break
 
             else:
                 print("\nInvalid selection.")
@@ -122,7 +136,7 @@ class UserInterfaceCMD:
             print("NEXT - element set selected")
             print("CLEAR - clear current selection")
             elset_input = input(
-                "Please select which element set will be included in the optimization: ")
+                "\nPlease select which element set will be included in the optimization: ")
 
             if elset_input.upper() == "NEXT":
                 print(f"\nSelected element set = {self.elset_choosen}")
@@ -137,12 +151,71 @@ class UserInterfaceCMD:
 
             elif int(elset_input) in range(len(self.file_processor.elsets_list)):
                 self.elset_choosen = elset_input
+                print(f"\nSelected element set = {self.elset_choosen}")
+                break
 
             else:
                 print("\nInvalid selection.")
 
     def orientation_processing(self) -> None:
-        pass
+        """User interaction to define orientation selection and type (discrete/continuous)"""
+
+        # Initialize all orientations as continuous
+        self.orient_type = ['CONTINUOUS'] * len(self.file_processor.orientations_list)
+
+        while True:
+            print("\n********** ORIENTATIONS DEFINITION **********")
+            print("The available orientation cards are:")
+
+            for index, orientation in enumerate(self.file_processor.orientations_list):
+                print(f"{index} - [{self.orient_type[index]}] - {orientation}")
+
+            print("NEXT - orientations selected")
+            print("CLEAR - clear current selection")
+            print("ALL - Include all orientations at once")
+            orientation_input = input(
+                "\nPlease select an orientation to modify its parameters: ")
+
+            if orientation_input.upper() == "NEXT":
+                print(f"\nSelected orientations = {self.orient_choosen}")
+                break
+
+            if orientation_input.upper() == "CLEAR":
+                self.orient_choosen = []
+                print("\nList of orientations to be included has been cleared")
+
+            elif orientation_input.upper() == "ALL":
+                self.orient_choosen = []
+                for i in range(len(self.file_processor.orientations_list)):
+                    self.orient_choosen.append(i)
+                print(f"\nSelected orientations = {self.orient_choosen}")
+                break
+
+            elif orientation_input.isdigit() is False:
+                print("\nPlease insert only numbers, one at a time")
+
+            elif int(orientation_input) in self.orient_choosen:
+                print("\nOrientation already selected, please choose another one")
+
+            elif int(orientation_input) in range(len(self.file_processor.orientations_list)):
+                while True:
+                    inclusion_answer = input("Do you want to include this card? [Y/N]\t")
+                    if inclusion_answer.upper() == 'Y':
+                        self.orient_choosen.append(int(orientation_input))
+                        type_answer = input("Which is the TYPE of this card? [CONTINUOUS/DISCRETE]")
+                        if type_answer.upper() == 'DISCRETE' or type_answer.upper() == 'CONTINUOUS':
+                            self.orient_type[int(orientation_input)] = type_answer.upper()
+                            break
+                        print("Invalid entry.")
+                        break
+                    if inclusion_answer.upper() == 'N':
+                        break
+                    else:
+                        print("Invalid entry.")
+                        break
+
+            else:
+                print("Invalid selection.")
 
     def shell_processing(self) -> None:
         pass
@@ -207,3 +280,4 @@ class UserInterfaceCMD:
 if __name__ == "__main__":
     instance = UserInterfaceCMD()
     instance.main()
+    # BYPASS = "ccx_files/Wing.inp"
