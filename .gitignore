@@ -5,6 +5,7 @@
 *.dat
 *.frd
 *.sta
+ccx_files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
