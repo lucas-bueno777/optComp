@@ -12,7 +12,7 @@ from file_manager import FileProcessor
 
 
 class OptimizationModule:
-    """Opt. module for optComp"""
+    """Opt. module for optComp - only orientations"""
 
     def __init__(self,
                  input_file: str,
@@ -41,7 +41,6 @@ class OptimizationModule:
 
         # Standard definitions
         self.calculix_name = "ccx"
-        self.output_file = "MOD_file"
         self.work_directory = os.path.dirname(os.path.abspath(__file__))
 
         # Local variables
@@ -52,7 +51,8 @@ class OptimizationModule:
         self.allowables = args
 
         # FileProcessor definitions
-        self.opt_object = FileProcessor(self.output_file)
+        self.opt_object = FileProcessor()
+        self.output_file = self.opt_object.output_file
         self.opt_object.read_file(input_file)
         aux_out, *_ = self.opt_object.search_orientation()
         self.num_variables = len(aux_out)
@@ -88,7 +88,7 @@ class OptimizationModule:
             self.opt_type, self.opt_criteria, *self.allowables)
         return objective
 
-    def change_default_definitions(self, calculix_name, output_file, work_directory):
+    def change_default_definitions(self, calculix_name, work_directory):
         """
         Changes the opt. module default definitions
 
@@ -99,7 +99,6 @@ class OptimizationModule:
             work_directory (str): Name of the current work directory
         """
         self.calculix_name = calculix_name
-        self.output_file = output_file
         self.work_directory = work_directory
 
     def run_optimization(self):
@@ -133,6 +132,55 @@ class OptimizationModule:
         best_solution = self.optimizer.provide_recommendation().args
 
         return best_solution
+
+class MultiParameterOptimizationModule:
+    """
+    Optimization module for optComp software that can handle multiple parameters such as different
+    materials, thickness variation (for shell elements), variable number of plies (only for 
+    composite shells) and multiple orientations.
+    """
+    def __init__(self) -> None:
+        # Initialization of booleans that define which type of optimization will be conducted
+        self.material_optimization = True
+        self.thickness_optimization = True
+        self.orientation_optimization = True
+        self.orientation_continuous = False
+        self.number_of_plies_optimization = False
+        self.optimizer = None
+
+    def objective_function(self) -> None:
+        """Objective function declaration"""
+
+    def optimizer_setup(self, *args: list) -> None:
+        """
+        Comprises the parametrization of the applicable optimization variables.
+        
+        Args:
+            *args (list): the first positional argument should be the material list, the second one 
+            must be the thickness bounds, the third one must be the orientation bounds or discrete
+            values, the fourth one must be the number of plies interval
+        """
+        material_list, thickness_list, orientations_list, plies_list = args
+
+        # Creation of Nevergrad parametrizations
+        parametrizations = []
+        if self.material_optimization:
+            parametrizations.append(ng.p.Choice(material_list))
+        if self.number_of_plies_optimization:
+            parametrizations.append(ng.p.Choice(plies_list))
+        if self.thickness_optimization:
+            parametrizations.append(ng.p.Array(shape = 1).set_bounds(thickness_list[0],
+                                                                     thickness_list[1]))
+        # Treatment for continuous or discrete case
+        if self.orientation_continuous:
+            parametrizations.append(ng.p.Array(shape = 1).set_bounds(orientations_list[0],
+                                                                   orientations_list[1]))
+        else:
+            parametrizations.append(ng.p.Choice(orientations_list))
+
+        # Joining all parametrizations in a single object
+        nevergrad_parametrization = ng.p.Instrumentation(parametrizations)
+        self.optimizer = ng.optimizers.NGOpt(parametrization = nevergrad_parametrization)
 
 
 # debug = OptimizationModule("Shell_3_sections_flipped.inp", "Stress", "design_elements",
